@@ -1,0 +1,154 @@
+name: Release Installers
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release version tag (e.g. v0.1.0)"
+        required: true
+        default: "v0.1.0"
+      prerelease:
+        description: "Mark release as pre-release"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  build-tauri:
+    name: Build (${{ matrix.label }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: windows-x64
+            os: windows-latest
+            args: "--target x86_64-pc-windows-msvc"
+          - label: macos-arm64
+            os: macos-latest
+            args: "--target aarch64-apple-darwin"
+          - label: macos-x64
+            os: macos-latest
+            args: "--target x86_64-apple-darwin"
+          - label: linux-x64
+            os: ubuntu-22.04
+            args: "--target x86_64-unknown-linux-gnu"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Linux dependencies
+        if: matrix.os == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.label == 'macos-x64' && 'x86_64-apple-darwin' || matrix.label == 'macos-arm64' && 'aarch64-apple-darwin' || '' }}
+
+      - name: Cache Cargo registry & target
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target"
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Build Windows Explorer 3D Thumbnail DLL & CLI
+        if: matrix.os == 'windows-latest'
+        run: cargo build --release --target x86_64-pc-windows-msvc -p shibanc-thumb-win -p shibanc-cli
+
+      - name: Sync release version & updater configuration
+        id: prep
+        shell: bash
+        env:
+          RAW_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+          SIGN_PRIV: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          SIGN_PUB: ${{ secrets.TAURI_SIGNING_PUBKEY }}
+          MATRIX_OS: ${{ matrix.os }}
+          REPO: ${{ github.repository }}
+        run: |
+          TAG="${RAW_TAG}"
+          if [[ "${TAG}" != v* ]]; then
+            TAG="v${TAG}"
+          fi
+          export VER="${TAG#v}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VER}" >> "$GITHUB_OUTPUT"
+
+          node -e '
+            const fs = require("fs");
+            const ver = process.env.VER;
+            const repo = process.env.REPO;
+            const isWin = process.env.MATRIX_OS === "windows-latest";
+            const hasSigning = Boolean(process.env.SIGN_PRIV && process.env.SIGN_PUB);
+
+            const confPath = "app/src-tauri/tauri.conf.json";
+            const conf = JSON.parse(fs.readFileSync(confPath, "utf8"));
+            conf.version = ver;
+            conf.bundle = conf.bundle || {};
+
+            if (isWin) {
+              conf.bundle.resources = {
+                "../../target/x86_64-pc-windows-msvc/release/shibanc_thumb_win.dll": "shibanc_thumb_win.dll"
+              };
+            }
+
+            if (hasSigning) {
+              conf.bundle.createUpdaterArtifacts = true;
+              conf.plugins = conf.plugins || {};
+              conf.plugins.updater = {
+                pubkey: process.env.SIGN_PUB.trim(),
+                endpoints: [
+                  `https://github.com/${repo}/releases/latest/download/latest.json`
+                ]
+              };
+            }
+
+            fs.writeFileSync(confPath, JSON.stringify(conf, null, 2) + "\n", "utf8");
+
+            const pkgPath = "app/package.json";
+            const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+            pkg.version = ver;
+            fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
+          '
+
+      - name: Build & publish installers via Tauri Action
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_GITHUB_REPO: ${{ github.repository }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: app
+          tagName: ${{ steps.prep.outputs.tag }}
+          releaseName: "ShibaNC ${{ steps.prep.outputs.tag }}"
+          releaseBody: |
+            ### ShibaNC ${{ steps.prep.outputs.tag }}
+
+            Cross-platform 3-Axis CNC G-Code Toolpath & Solid Simulation Studio.
+
+            - **Windows (x64)**: Download `ShibaNC_*_x64-setup.exe` (NSIS) or `.msi`
+            - **macOS (Apple Silicon / Intel)**: Download `ShibaNC_*_aarch64.dmg` or `ShibaNC_*_x64.dmg`
+            - **Linux (x64)**: Download `.AppImage` or `.deb`
+          releaseDraft: false
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          args: ${{ matrix.args }}

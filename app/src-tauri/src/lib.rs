@@ -373,10 +373,50 @@ fn read_text_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
 }
 
+#[tauri::command]
+fn get_app_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
+#[tauri::command]
+fn open_external_url(url: String) -> Result<(), String> {
+    if !url.starts_with("https://") {
+        return Err("Only https:// URLs are permitted".to_string());
+    }
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("rundll32")
+            .args(["url.dll,FileProtocolHandler", &url])
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(&url)
+            .spawn()
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_process::init());
+
+    #[cfg(not(any(target_os = "android", target_os = "ios")))]
+    let builder = builder.plugin(tauri_plugin_updater::Builder::new().build());
+
+    builder
         .manage(AppState {
             session: Mutex::new(None),
         })
@@ -397,6 +437,8 @@ pub fn run() {
             toggle_file_associations,
             save_text_file,
             read_text_file,
+            get_app_version,
+            open_external_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running ShibaNC application");

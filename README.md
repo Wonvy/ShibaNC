@@ -183,6 +183,22 @@ ShibaNC supports user-authored translations via plain `.json` files—no rebuild
 
 ---
 
+## Automated Releases & In-App Auto-Updates
+
+ShibaNC includes ready-to-use GitHub Actions workflows under [`.github/workflows/`](./.github/workflows):
+
+- **[`ci.yml`](./.github/workflows/ci.yml)**: Runs frontend type-checking/bundling (`tsc && vite build`) and Rust workspace checks/tests (`cargo check` & `cargo test`) on every push and pull request.
+- **[`release.yml`](./.github/workflows/release.yml)**: Automatically builds and publishes native installers for **Windows (`x64` `.exe` NSIS + `.msi`, bundled with `shibanc_thumb_win.dll`)**, **macOS (`arm64` + `x64` `.dmg`)**, and **Linux (`x64` `.AppImage` + `.deb`)** whenever you push a `v*` tag (or trigger **Run workflow** manually):
+  ```bash
+  git tag v0.1.0
+  git push origin v0.1.0
+  ```
+- **Version Badge & Auto-Updater**: Click **`v0.1.0`** in the top-left header to check for updates or toggle startup auto-checks.
+  - Works out-of-the-box with GitHub Releases (zero secrets required).
+  - To enable signed one-click **in-app download, install & restart** (`latest.json`), generate a Tauri signing keypair (`npx tauri signer generate -w ~/.tauri/shibanc.key`) and add `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and `TAURI_SIGNING_PUBKEY` to your repository's **Actions Secrets**.
+
+---
+
 ## License
 
 Released under the [MIT License](./LICENSE).

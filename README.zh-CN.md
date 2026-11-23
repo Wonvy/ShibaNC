@@ -182,6 +182,25 @@ Linux 桌面环境（GNOME Files / KDE Dolphin）：
 
 ---
 
+## GitHub Actions 自动打包发布与软件自动更新
+
+仓库内置完整的 CI/CD 工作流（位于 [`.github/workflows/`](./.github/workflows)）：
+
+- **[`ci.yml`](./.github/workflows/ci.yml)**：每次 Push 或 PR 自动执行前端类型检查打包（`tsc && vite build`）与 Rust 全工作区编译测试（`cargo check` & `cargo test`）。
+- **[`release.yml`](./.github/workflows/release.yml)**：推送 `v*` 版本标签（或在 GitHub Actions 页面手动点击 **Run workflow**）时，自动并行构建并发布全平台安装包至 GitHub Releases：
+  - **Windows (`x64`)**：`ShibaNC_*_x64-setup.exe`（NSIS 安装包）与 `.msi`（自动内置 `shibanc_thumb_win.dll` 缩略图扩展）
+  - **macOS (`Apple Silicon` + `Intel`)**：`.dmg` 与 `.app.tar.gz`
+  - **Linux (`x64`)**：`.AppImage` 与 `.deb`
+  ```bash
+  git tag v0.1.0
+  git push origin v0.1.0
+  ```
+- **版本号显示与自动更新**：软件左上角实时显示当前版本号（如 **`v0.1.0`**），点击可打开更新面板，支持**启动时自动检查更新**。
+  - **零配置开箱即用**：无需配置密钥即可自动检测 GitHub Releases 最新版本并匹配当前系统安装包下载。
+  - **应用内一键静默覆盖更新（可选）**：运行 `npx tauri signer generate -w ~/.tauri/shibanc.key` 生成签名密钥，并在仓库 **Actions Secrets** 中添加 `TAURI_SIGNING_PRIVATE_KEY`、`TAURI_SIGNING_PRIVATE_KEY_PASSWORD` 与 `TAURI_SIGNING_PUBKEY`，Action 将自动生成签名与 `latest.json`，激活客户端内一键下载安装并重启。
+
+---
+
 ## 开源许可
 
 本项目基于 [MIT License](./LICENSE) 开源发布。

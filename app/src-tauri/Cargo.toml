@@ -16,7 +16,11 @@ shibanc-render = { path = "../../crates/shibanc-render" }
 shibanc-thumb-win = { path = "../../crates/shibanc-thumb-win" }
 tauri = { version = "2.1", features = [] }
 tauri-plugin-dialog = "2.0"
+tauri-plugin-process = "2.0"
 serde.workspace = true
 serde_json.workspace = true
 bytemuck.workspace = true
 image.workspace = true
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-updater = "2.0"

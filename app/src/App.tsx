@@ -47,6 +47,7 @@ import {
 import { SPEED_OPTIONS, SpeedSelect } from "./components/SpeedSelect";
 import { StockDiagram } from "./components/StockDiagram";
 import { ToolSelect } from "./components/ToolSelect";
+import { VersionUpdateMenu } from "./components/VersionUpdateMenu";
 import { ViewCube } from "./components/ViewCube";
 import { useI18n } from "./i18n/I18nContext";
 import {
@@ -336,7 +337,9 @@ export const App: React.FC = () => {
   const [folderFiles, setFolderFiles] = useState<FolderFileItem[]>([]);
   const [activeFileKey, setActiveFileKey] = useState<string>("");
   const [folderFilter, setFolderFilter] = useState<string>("");
-  const [topMenu, setTopMenu] = useState<"view" | "export" | "lang" | null>(null);
+  const [topMenu, setTopMenu] = useState<"view" | "export" | "lang" | "update" | null>(
+    null
+  );
   const [assocRegistered, setAssocRegistered] = useState<boolean>(false);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -1905,6 +1908,12 @@ export const App: React.FC = () => {
             <span className="brand-mark">S</span>
             <span>ShibaNC</span>
           </div>
+          <VersionUpdateMenu
+            isOpen={topMenu === "update"}
+            onToggle={() => setTopMenu((m) => (m === "update" ? null : "update"))}
+            onClose={() => setTopMenu(null)}
+            onToast={showToast}
+          />
         </div>
 
         {/* Center Zone: Core Display Mode + Section & Measure */}
