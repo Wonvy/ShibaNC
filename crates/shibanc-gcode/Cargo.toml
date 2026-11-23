@@ -1,0 +1,11 @@
+[package]
+name = "shibanc-gcode"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde.workspace = true
+bytemuck.workspace = true
+glam.workspace = true
+memmap2.workspace = true
+thiserror.workspace = true

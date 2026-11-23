@@ -1,0 +1,22 @@
+# Normalize text line endings
+* text=auto eol=lf
+
+# Windows batch / PowerShell scripts
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Shader & source language hints
+*.wgsl linguist-language=WGSL
+
+# Keep sample toolpaths out of GitHub language statistics
+samples/** linguist-generated=true
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.ico binary
+*.icns binary
+*.stl binary

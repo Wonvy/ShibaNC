@@ -1,0 +1,23 @@
+[package]
+name = "shibanc-cli"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "shibanc-cli"
+path = "src/main.rs"
+
+[dependencies]
+shibanc-gcode = { path = "../shibanc-gcode" }
+shibanc-render = { path = "../shibanc-render" }
+shibanc-thumb-win = { path = "../shibanc-thumb-win" }
+serde.workspace = true
+serde_json.workspace = true
+image.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+winreg = "0.52"
+windows = { version = "0.58", features = [
+    "Win32_UI_Shell",
+    "Win32_Foundation",
+] }

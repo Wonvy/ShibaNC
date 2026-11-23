@@ -1,0 +1,11 @@
+[package]
+name = "shibanc-ffi"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[dependencies]
+shibanc-gcode = { path = "../shibanc-gcode" }
+shibanc-render = { path = "../shibanc-render" }

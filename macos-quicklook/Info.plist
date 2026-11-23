@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.shibanc.viewer.QuickLookThumb</string>
+    <key>CFBundleName</key>
+    <string>ShibaNCQuickLook</string>
+    <key>NSExtension</key>
+    <dict>
+        <key>NSExtensionAttributes</key>
+        <dict>
+            <key>QLSupportedContentTypes</key>
+            <array>
+                <string>com.shibanc.gcode.tap</string>
+                <string>com.shibanc.gcode.nc</string>
+            </array>
+            <key>QLThumbnailMinimumDimension</key>
+            <integer>32</integer>
+        </dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.quicklook.thumbnail</string>
+        <key>NSExtensionPrincipalClass</key>
+        <string>$(PRODUCT_MODULE_NAME).ThumbnailProvider</string>
+    </dict>
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.shibanc.gcode.tap</string>
+            <key>UTTypeDescription</key>
+            <string>CNC TAP Relief Toolpath</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.plain-text</string>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>tap</string>
+                </array>
+            </dict>
+        </dict>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.shibanc.gcode.nc</string>
+            <key>UTTypeDescription</key>
+            <string>CNC Numerical Control Program</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.plain-text</string>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict>
+                <key>public.filename-extension</key>
+                <array>
+                    <string>nc</string>
+                    <string>gcode</string>
+                    <string>cnc</string>
+                </array>
+            </dict>
+        </dict>
+    </array>
+</dict>
+</plist>

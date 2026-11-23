@@ -1,0 +1,22 @@
+[package]
+name = "shibanc-app"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+name = "shibanc_app_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.0", features = [] }
+
+[dependencies]
+shibanc-gcode = { path = "../../crates/shibanc-gcode" }
+shibanc-render = { path = "../../crates/shibanc-render" }
+shibanc-thumb-win = { path = "../../crates/shibanc-thumb-win" }
+tauri = { version = "2.1", features = [] }
+tauri-plugin-dialog = "2.0"
+serde.workspace = true
+serde_json.workspace = true
+bytemuck.workspace = true
+image.workspace = true
