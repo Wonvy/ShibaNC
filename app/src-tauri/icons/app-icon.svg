@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="112" y1="64" x2="912" y2="960" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#27272A"/>
+      <stop offset="52%" stop-color="#141417"/>
+      <stop offset="100%" stop-color="#09090B"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="128" y1="96" x2="896" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#52525B"/>
+      <stop offset="100%" stop-color="#27272A"/>
+    </linearGradient>
+    <linearGradient id="mark" x1="310" y1="220" x2="714" y2="804" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="72%" stop-color="#F4F4F5"/>
+      <stop offset="100%" stop-color="#BAE6FD"/>
+    </linearGradient>
+    <linearGradient id="pathGlow" x1="250" y1="760" x2="780" y2="760" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#EF4444"/>
+      <stop offset="50%" stop-color="#22C55E"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Rounded Squircle Studio Tile -->
+  <rect x="64" y="64" width="896" height="896" rx="212" fill="url(#bg)"/>
+  <rect x="68" y="68" width="888" height="888" rx="208" stroke="url(#rim)" stroke-width="8"/>
+
+  <!-- Geometric Precision 'S' Monogram -->
+  <path
+    d="M664 334C646 286 592 256 518 256C414 256 346 306 346 382C346 449 398 483 496 504L552 516C608 528 634 548 634 584C634 628 588 658 514 658C434 658 382 626 364 574L270 606C298 692 384 744 512 744C644 744 736 680 736 578C736 500 682 460 572 436L514 424C462 413 442 396 442 368C442 334 476 312 528 312C578 312 612 332 628 366L664 334Z"
+    fill="url(#mark)"
+  />
+
+  <!-- Subtle CNC 3-Axis Toolpath Accent Bar -->
+  <rect x="292" y="802" width="440" height="24" rx="12" fill="url(#pathGlow)"/>
+</svg>
