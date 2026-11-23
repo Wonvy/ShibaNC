@@ -188,7 +188,8 @@ Linux 桌面环境（GNOME Files / KDE Dolphin）：
 
 - **[`ci.yml`](./.github/workflows/ci.yml)**：每次 Push 或 PR 自动执行前端类型检查打包（`tsc && vite build`）与 Rust 全工作区编译测试（`cargo check` & `cargo test`）。
 - **[`release.yml`](./.github/workflows/release.yml)**：推送 `v*` 版本标签（或在 GitHub Actions 页面手动点击 **Run workflow**）时，自动并行构建并发布全平台安装包至 GitHub Releases：
-  - **Windows (`x64`)**：`ShibaNC_*_x64-setup.exe`（NSIS 安装包）与 `.msi`（自动内置 `shibanc_thumb_win.dll` 缩略图扩展）
+  - **Windows 10 / 11 (`x64`)**：`ShibaNC_*_x64-setup.exe`（NSIS 安装包）与 `.msi`（内置 `shibanc_thumb_win.dll` 缩略图扩展）
+  - **Windows 7 SP1 专用版 (`x64`)**：`ShibaNC_*_x64-win7-setup.exe` 与免安装绿色包 `ShibaNC_*_x64-win7-portable.zip`（集成 `YY-Thunks` 系统符号兼容层与 WebGL 2.0 三维引擎，兼容车间老旧 Win7 工控机，本地也可通过 `pwsh ./scripts/build-win7.ps1` 独立构建）
   - **macOS (`Apple Silicon` + `Intel`)**：`.dmg` 与 `.app.tar.gz`
   - **Linux (`x64`)**：`.AppImage` 与 `.deb`
   ```bash

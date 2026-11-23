@@ -3,6 +3,10 @@ name = "shibanc-thumb-win"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+win7 = []
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 

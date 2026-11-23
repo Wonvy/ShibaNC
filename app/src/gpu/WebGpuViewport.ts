@@ -15,6 +15,57 @@ import {
   projectPointToCss,
   unprojectPoint,
 } from "./math";
+import { WebGl2Viewport } from "./WebGl2Viewport";
+
+export interface ViewportEngine {
+  setOnAsyncUpdate(cb: (() => void) | null): void;
+  getActivePrecisionInfo(): { mmPerCell: number; isRoi: boolean; subdiv: number };
+  uploadSegments(rawBuffer: ArrayBuffer): void;
+  getCurrentCutterPos(): [number, number, number];
+  getSegmentTip(activeCount: number): SegmentTipInfo | null;
+  findSegmentIndexForLine(lineNumber: number): number;
+  render(p: ViewportRenderParams): void;
+  pickModelPoint(
+    localCssX: number,
+    localCssY: number,
+    showSolid: boolean,
+    activeSegments: number
+  ): [number, number, number] | null;
+  exportBinaryStl(): Promise<{ buffer: ArrayBuffer; triCount: number }>;
+  renderThumbnailDataUrl(
+    segmentsBuffer: ArrayBuffer,
+    stock: StockSpec,
+    tool: ToolSpec,
+    materialId: number,
+    darkMode: boolean
+  ): Promise<string>;
+  destroy(): void;
+}
+
+/**
+ * Automatically selects WebGPU on modern Win10/11/macOS/Linux systems, and seamlessly
+ * falls back to WebGL 2.0 (DirectX 11 ANGLE / SwiftShader) on Windows 7 WebView2 109 or legacy GPUs.
+ */
+export async function createViewportEngine(
+  canvas: HTMLCanvasElement,
+  shaders: ShadersDto,
+  onAsyncUpdate?: () => void,
+  isDisposed?: () => boolean
+): Promise<ViewportEngine> {
+  const forceGl2 =
+    typeof window !== "undefined" &&
+    new URLSearchParams(window.location.search).get("renderer") === "webgl2";
+
+  if (!forceGl2 && typeof navigator !== "undefined" && navigator.gpu) {
+    try {
+      return await WebGpuViewport.create(canvas, shaders, onAsyncUpdate, isDisposed);
+    } catch (e) {
+      if (isDisposed?.()) throw e;
+      // Fall through to WebGL2 compatibility engine (e.g. Win7 / D3D11-only driver)
+    }
+  }
+  return WebGl2Viewport.create(canvas, onAsyncUpdate, isDisposed);
+}
 
 const MSAA_SAMPLES = 4;
 const RENDER_UNIFORM_BYTES = 208; // 16 + 9 * 4 = 52 floats = 208 bytes (fits inside 256-byte dynamic slot)
@@ -64,7 +115,7 @@ interface RoiPatchState {
   subdiv: number;
 }
 
-export class WebGpuViewport {
+export class WebGpuViewport implements ViewportEngine {
   private canvas: HTMLCanvasElement;
   private device!: GPUDevice;
   private ctx!: GPUCanvasContext;

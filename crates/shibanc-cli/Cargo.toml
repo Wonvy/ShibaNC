@@ -3,6 +3,10 @@ name = "shibanc-cli"
 version.workspace = true
 edition.workspace = true
 
+[features]
+default = []
+win7 = ["shibanc-thumb-win/win7"]
+
 [[bin]]
 name = "shibanc-cli"
 path = "src/main.rs"

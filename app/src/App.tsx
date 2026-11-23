@@ -22,7 +22,7 @@ import {
   TOOL_KIND_CODE,
   ToolSpec,
 } from "./types";
-import { WebGpuViewport } from "./gpu/WebGpuViewport";
+import { createViewportEngine, ViewportEngine } from "./gpu/WebGpuViewport";
 import {
   lookAtRh,
   mulMat4,
@@ -313,7 +313,7 @@ export const App: React.FC = () => {
   const topbarRef = useRef<HTMLElement | null>(null);
   const viewportRef = useRef<HTMLElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const vpRef = useRef<WebGpuViewport | null>(null);
+  const vpRef = useRef<ViewportEngine | null>(null);
   const webFileInputRef = useRef<HTMLInputElement | null>(null);
   const webFolderInputRef = useRef<HTMLInputElement | null>(null);
   const tweenRafRef = useRef<number>(0);
@@ -625,7 +625,7 @@ export const App: React.FC = () => {
           ? await invoke<ShadersDto>("get_wgsl_shaders")
           : getWebShaders();
         if (!canvasRef.current || disposed) return;
-        const vp = await WebGpuViewport.create(
+        const vp = await createViewportEngine(
           canvasRef.current,
           shaders,
           () => asyncRedrawRef.current(),

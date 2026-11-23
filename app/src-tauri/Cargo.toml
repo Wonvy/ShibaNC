@@ -7,6 +7,10 @@ edition.workspace = true
 name = "shibanc_app_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
+[features]
+default = []
+win7 = ["shibanc-thumb-win/win7"]
+
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
 

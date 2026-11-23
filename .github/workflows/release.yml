@@ -146,9 +146,69 @@ jobs:
 
             Cross-platform 3-Axis CNC G-Code Toolpath & Solid Simulation Studio.
 
-            - **Windows (x64)**: Download `ShibaNC_*_x64-setup.exe` (NSIS) or `.msi`
+            - **Windows 10 / 11 (x64)**: Download `ShibaNC_*_x64-setup.exe` (NSIS) or `.msi`
+            - **Windows 7 SP1 Dedicated Edition (x64)**: Download `ShibaNC_*_x64-win7-setup.exe` or `ShibaNC_*_x64-win7-portable.zip`
             - **macOS (Apple Silicon / Intel)**: Download `ShibaNC_*_aarch64.dmg` or `ShibaNC_*_x64.dmg`
             - **Linux (x64)**: Download `.AppImage` or `.deb`
           releaseDraft: false
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           args: ${{ matrix.args }}
+
+  build-win7:
+    name: Build (windows-win7-x64)
+    needs: build-tauri
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Setup Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install frontend dependencies
+        working-directory: app
+        run: npm ci
+
+      - name: Sync version & build dedicated Windows 7 installer
+        id: win7
+        shell: pwsh
+        env:
+          RAW_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+          VITE_GITHUB_REPO: ${{ github.repository }}
+        run: |
+          $tag = $env:RAW_TAG
+          if (-not $tag.StartsWith("v")) { $tag = "v$tag" }
+          $ver = $tag.Substring(1)
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+          "version=$ver" >> $env:GITHUB_OUTPUT
+
+          $confPath = "app/src-tauri/tauri.conf.json"
+          $conf = Get-Content $confPath -Raw | ConvertFrom-Json
+          $conf.version = $ver
+          $conf | ConvertTo-Json -Depth 10 | Set-Content $confPath -Encoding UTF8
+
+          $pkgPath = "app/package.json"
+          $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
+          $pkg.version = $ver
+          $pkg | ConvertTo-Json -Depth 10 | Set-Content $pkgPath -Encoding UTF8
+
+          pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-win7.ps1
+
+      - name: Upload Windows 7 installer & portable ZIP to GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.win7.outputs.tag }}
+          VER: ${{ steps.win7.outputs.version }}
+        run: |
+          gh release upload $env:TAG `
+            "target/win7/ShibaNC_${env:VER}_x64-win7-setup.exe" `
+            "target/win7/ShibaNC_${env:VER}_x64-win7-portable.zip" `
+            --clobber

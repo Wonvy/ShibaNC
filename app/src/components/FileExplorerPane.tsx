@@ -4,7 +4,7 @@ import { LayoutGrid, List } from "lucide-react";
 import { useI18n } from "../i18n/I18nContext";
 import { TranslationKey } from "../i18n/locales";
 import { FolderFileItem } from "../types";
-import { WebGpuViewport } from "../gpu/WebGpuViewport";
+import { ViewportEngine } from "../gpu/WebGpuViewport";
 import {
   generateWebSampleText,
   isTauriRuntime,
@@ -17,7 +17,7 @@ interface FileExplorerPaneProps {
   currentFileName?: string;
   folderFilter: string;
   darkMode: boolean;
-  viewport: WebGpuViewport | null;
+  viewport: ViewportEngine | null;
   onChangeFilter: (val: string) => void;
   onClearFiles: () => void;
   onOpenFileDialog: () => void;

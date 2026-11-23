@@ -54,7 +54,7 @@ impl HeadlessGpuEngine {
 
     async fn new_async() -> Result<Self, RenderError> {
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::PRIMARY,
+            backends: wgpu::Backends::all(),
             ..Default::default()
         });
 

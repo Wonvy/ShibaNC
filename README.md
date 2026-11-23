@@ -188,7 +188,7 @@ ShibaNC supports user-authored translations via plain `.json` files—no rebuild
 ShibaNC includes ready-to-use GitHub Actions workflows under [`.github/workflows/`](./.github/workflows):
 
 - **[`ci.yml`](./.github/workflows/ci.yml)**: Runs frontend type-checking/bundling (`tsc && vite build`) and Rust workspace checks/tests (`cargo check` & `cargo test`) on every push and pull request.
-- **[`release.yml`](./.github/workflows/release.yml)**: Automatically builds and publishes native installers for **Windows (`x64` `.exe` NSIS + `.msi`, bundled with `shibanc_thumb_win.dll`)**, **macOS (`arm64` + `x64` `.dmg`)**, and **Linux (`x64` `.AppImage` + `.deb`)** whenever you push a `v*` tag (or trigger **Run workflow** manually):
+- **[`release.yml`](./.github/workflows/release.yml)**: Automatically builds and publishes native installers for **Windows 10/11 (`x64` `.exe` NSIS + `.msi`)**, **Windows 7 SP1 Dedicated Edition (`ShibaNC_*_x64-win7-setup.exe` + `portable.zip`, linked with `YY-Thunks` + WebGL 2.0 3D engine)**, **macOS (`arm64` + `x64` `.dmg`)**, and **Linux (`x64` `.AppImage` + `.deb`)** whenever you push a `v*` tag (or trigger **Run workflow** manually):
   ```bash
   git tag v0.1.0
   git push origin v0.1.0
