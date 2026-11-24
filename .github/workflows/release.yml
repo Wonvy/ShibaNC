@@ -58,7 +58,9 @@ jobs:
               { encoding: "utf8" }
             );
             const releases = JSON.parse(listJson);
-            let existing = releases.find((r) => r.tag_name === tag);
+            let existing = releases.find(
+              (r) => r.tag_name === tag || (r.draft && r.name === `ShibaNC ${tag}`)
+            );
 
             if (!existing) {
               const body = [
@@ -285,14 +287,17 @@ jobs:
 
   publish-release:
     name: Publish Release
-    needs: [build-tauri, build-win7]
+    needs: [prepare-release, build-tauri, build-win7]
     runs-on: ubuntu-22.04
     steps:
       - name: Publish GitHub Release draft
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare-release.outputs.tag }}
           RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
         run: |
-          gh api -X PATCH "repos/${REPO}/releases/${RELEASE_ID}" -F draft=false >/dev/null
-          echo "Published release id=${RELEASE_ID}"
+          gh api -X PATCH "repos/${REPO}/releases/${RELEASE_ID}" \
+            -f tag_name="${TAG}" \
+            -F draft=false >/dev/null
+          echo "Published release ${TAG} (id=${RELEASE_ID})"
