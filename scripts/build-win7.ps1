@@ -76,7 +76,8 @@ Redirect-CombaseToWin7Ole32 (Join-Path $win7TargetDir "release\shibanc_thumb_win
 Redirect-CombaseToWin7Ole32 (Join-Path $win7TargetDir "release\shibanc-cli.exe")
 
 $dllAbs = (Resolve-Path (Join-Path $win7TargetDir "release\shibanc_thumb_win.dll")).Path.Replace("\", "/")
-$tauriOverride = @{
+$overrideFile = Join-Path $win7TargetDir "tauri.win7.override.json"
+$tauriOverrideJson = @{
     bundle = @{
         resources = @{
             $dllAbs = "shibanc_thumb_win.dll"
@@ -88,18 +89,20 @@ $tauriOverride = @{
             }
         }
     }
-} | ConvertTo-Json -Depth 6 -Compress
+} | ConvertTo-Json -Depth 6
+[System.IO.File]::WriteAllText($overrideFile, $tauriOverrideJson, [System.Text.UTF8Encoding]::new($false))
 
 Write-Host "==> Building ShibaNC Windows 7 Edition NSIS Installer..." -ForegroundColor Cyan
 Push-Location (Join-Path $repoRoot "app")
 try {
     # Build release binary first, redirect combase.dll -> ole32.dll on both exe & dll, then bundle NSIS installer
-    npx tauri build --no-bundle --features win7 --config $tauriOverride
+    npx tauri build --no-bundle --features win7 --config $overrideFile
     Redirect-CombaseToWin7Ole32 (Join-Path $win7TargetDir "release\shibanc-app.exe")
     Redirect-CombaseToWin7Ole32 (Join-Path $win7TargetDir "release\shibanc_thumb_win.dll")
-    npx tauri bundle --bundles nsis --features win7 --config $tauriOverride
+    npx tauri bundle --bundles nsis --features win7 --config $overrideFile
 } finally {
     Pop-Location
+    if (Test-Path $overrideFile) { Remove-Item -Force $overrideFile }
 }
 
 $ver = (Get-Content (Join-Path $repoRoot "app\package.json") | ConvertFrom-Json).version

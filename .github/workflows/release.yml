@@ -20,50 +20,143 @@ permissions:
   contents: write
 
 jobs:
+  prepare-release:
+    name: Prepare Release Draft
+    runs-on: ubuntu-22.04
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+      version: ${{ steps.meta.outputs.version }}
+      release_id: ${{ steps.meta.outputs.release_id }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create or reuse GitHub Release draft
+        id: meta
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          RAW_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+          IS_PRERELEASE: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const { execFileSync } = require("child_process");
+
+            let tag = (process.env.RAW_TAG || "v0.1.0").trim();
+            if (!tag.startsWith("v")) tag = "v" + tag;
+            const ver = tag.slice(1);
+            const repo = process.env.REPO;
+            const sha = process.env.SHA;
+            const prerelease = process.env.IS_PRERELEASE === "true";
+
+            const listJson = execFileSync(
+              "gh",
+              ["api", `repos/${repo}/releases?per_page=30`],
+              { encoding: "utf8" }
+            );
+            const releases = JSON.parse(listJson);
+            let existing = releases.find((r) => r.tag_name === tag);
+
+            if (!existing) {
+              const body = [
+                `## ShibaNC ${tag}`,
+                "",
+                "Cross-platform 3-Axis CNC G-Code Toolpath & Solid Simulation Studio.",
+                "跨平台三轴 CNC G 代码刀路与高清实体切削仿真工作室。",
+                "",
+                `- **Windows 10 / 11 (x64)**: \`ShibaNC_${ver}_x64-setup.exe\` (NSIS) / \`.msi\``,
+                `- **Windows 7 SP1 Dedicated Edition (x64)**: \`ShibaNC_${ver}_x64-win7-setup.exe\` / \`ShibaNC_${ver}_x64-win7-portable.zip\``,
+                `- **macOS (Apple Silicon & Intel)**: \`ShibaNC_${ver}_aarch64.dmg\` / \`ShibaNC_${ver}_x64.dmg\``,
+                `- **Linux (x64)**: \`.AppImage\` / \`.deb\``,
+              ].join("\n");
+
+              const payload = JSON.stringify({
+                tag_name: tag,
+                target_commitish: sha,
+                name: `ShibaNC ${tag}`,
+                body,
+                draft: true,
+                prerelease,
+              });
+
+              const createdJson = execFileSync(
+                "gh",
+                ["api", "-X", "POST", `repos/${repo}/releases`, "--input", "-"],
+                { input: payload, encoding: "utf8" }
+              );
+              existing = JSON.parse(createdJson);
+            }
+
+            const out = [
+              `tag=${tag}`,
+              `version=${ver}`,
+              `release_id=${existing.id}`,
+            ].join("\n") + "\n";
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, out, "utf8");
+            console.log(`Prepared release ${tag} (id=${existing.id})`);
+          '
+
   build-tauri:
     name: Build (${{ matrix.label }})
-    runs-on: ${{ matrix.os }}
+    needs: prepare-release
+    runs-on: ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - label: windows-x64
-            os: windows-latest
-            args: "--target x86_64-pc-windows-msvc"
+            platform: windows-latest
+            args: ""
           - label: macos-arm64
-            os: macos-latest
+            platform: macos-latest
             args: "--target aarch64-apple-darwin"
           - label: macos-x64
-            os: macos-latest
+            platform: macos-latest
             args: "--target x86_64-apple-darwin"
           - label: linux-x64
-            os: ubuntu-22.04
-            args: "--target x86_64-unknown-linux-gnu"
+            platform: ubuntu-22.04
+            args: ""
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Linux dependencies
-        if: matrix.os == 'ubuntu-22.04'
+      - name: Install Linux dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          sudo apt-get install -y \
+            build-essential \
+            pkg-config \
+            curl \
+            wget \
+            file \
+            libssl-dev \
+            libgtk-3-dev \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            libxdo-dev \
+            libfuse2 \
+            patchelf
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Setup Rust stable
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.label == 'macos-x64' && 'x86_64-apple-darwin' || matrix.label == 'macos-arm64' && 'aarch64-apple-darwin' || '' }}
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
-      - name: Cache Cargo registry & target
-        uses: Swatinem/rust-cache@v2
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
         with:
           workspaces: ". -> target"
 
@@ -72,27 +165,18 @@ jobs:
         run: npm ci
 
       - name: Build Windows Explorer 3D Thumbnail DLL & CLI
-        if: matrix.os == 'windows-latest'
-        run: cargo build --release --target x86_64-pc-windows-msvc -p shibanc-thumb-win -p shibanc-cli
+        if: matrix.platform == 'windows-latest'
+        run: cargo build --release -p shibanc-thumb-win -p shibanc-cli
 
       - name: Sync release version & updater configuration
-        id: prep
         shell: bash
         env:
-          RAW_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+          VER: ${{ needs.prepare-release.outputs.version }}
           SIGN_PRIV: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           SIGN_PUB: ${{ secrets.TAURI_SIGNING_PUBKEY }}
-          MATRIX_OS: ${{ matrix.os }}
+          MATRIX_OS: ${{ matrix.platform }}
           REPO: ${{ github.repository }}
         run: |
-          TAG="${RAW_TAG}"
-          if [[ "${TAG}" != v* ]]; then
-            TAG="v${TAG}"
-          fi
-          export VER="${TAG#v}"
-          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "version=${VER}" >> "$GITHUB_OUTPUT"
-
           node -e '
             const fs = require("fs");
             const ver = process.env.VER;
@@ -107,7 +191,7 @@ jobs:
 
             if (isWin) {
               conf.bundle.resources = {
-                "../../target/x86_64-pc-windows-msvc/release/shibanc_thumb_win.dll": "shibanc_thumb_win.dll"
+                "../../target/release/shibanc_thumb_win.dll": "shibanc_thumb_win.dll"
               };
             }
 
@@ -130,33 +214,22 @@ jobs:
             fs.writeFileSync(pkgPath, JSON.stringify(pkg, null, 2) + "\n", "utf8");
           '
 
-      - name: Build & publish installers via Tauri Action
+      - name: Build & upload Tauri desktop bundles
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_GITHUB_REPO: ${{ github.repository }}
+          APPIMAGE_EXTRACT_AND_RUN: 1
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: app
-          tagName: ${{ steps.prep.outputs.tag }}
-          releaseName: "ShibaNC ${{ steps.prep.outputs.tag }}"
-          releaseBody: |
-            ### ShibaNC ${{ steps.prep.outputs.tag }}
-
-            Cross-platform 3-Axis CNC G-Code Toolpath & Solid Simulation Studio.
-
-            - **Windows 10 / 11 (x64)**: Download `ShibaNC_*_x64-setup.exe` (NSIS) or `.msi`
-            - **Windows 7 SP1 Dedicated Edition (x64)**: Download `ShibaNC_*_x64-win7-setup.exe` or `ShibaNC_*_x64-win7-portable.zip`
-            - **macOS (Apple Silicon / Intel)**: Download `ShibaNC_*_aarch64.dmg` or `ShibaNC_*_x64.dmg`
-            - **Linux (x64)**: Download `.AppImage` or `.deb`
-          releaseDraft: false
-          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          releaseId: ${{ needs.prepare-release.outputs.release_id }}
           args: ${{ matrix.args }}
 
   build-win7:
     name: Build (windows-win7-x64)
-    needs: build-tauri
+    needs: prepare-release
     runs-on: windows-latest
     steps:
       - name: Checkout repository
@@ -165,50 +238,61 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
           cache-dependency-path: app/package-lock.json
 
-      - name: Setup Rust stable
+      - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: ". -> target/win7"
 
       - name: Install frontend dependencies
         working-directory: app
         run: npm ci
 
       - name: Sync version & build dedicated Windows 7 installer
-        id: win7
         shell: pwsh
         env:
-          RAW_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
+          VER: ${{ needs.prepare-release.outputs.version }}
           VITE_GITHUB_REPO: ${{ github.repository }}
         run: |
-          $tag = $env:RAW_TAG
-          if (-not $tag.StartsWith("v")) { $tag = "v$tag" }
-          $ver = $tag.Substring(1)
-          "tag=$tag" >> $env:GITHUB_OUTPUT
-          "version=$ver" >> $env:GITHUB_OUTPUT
-
-          $confPath = "app/src-tauri/tauri.conf.json"
-          $conf = Get-Content $confPath -Raw | ConvertFrom-Json
-          $conf.version = $ver
-          $conf | ConvertTo-Json -Depth 10 | Set-Content $confPath -Encoding UTF8
-
-          $pkgPath = "app/package.json"
-          $pkg = Get-Content $pkgPath -Raw | ConvertFrom-Json
-          $pkg.version = $ver
-          $pkg | ConvertTo-Json -Depth 10 | Set-Content $pkgPath -Encoding UTF8
-
+          node -e '
+            const fs = require("fs");
+            const ver = process.env.VER;
+            for (const p of ["app/src-tauri/tauri.conf.json", "app/package.json"]) {
+              const obj = JSON.parse(fs.readFileSync(p, "utf8"));
+              obj.version = ver;
+              fs.writeFileSync(p, JSON.stringify(obj, null, 2) + "\n", "utf8");
+            }
+          '
           pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/build-win7.ps1
 
-      - name: Upload Windows 7 installer & portable ZIP to GitHub Release
+      - name: Upload Windows 7 installer & portable ZIP to Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.win7.outputs.tag }}
-          VER: ${{ steps.win7.outputs.version }}
+          TAG: ${{ needs.prepare-release.outputs.tag }}
+          VER: ${{ needs.prepare-release.outputs.version }}
         run: |
           gh release upload $env:TAG `
             "target/win7/ShibaNC_${env:VER}_x64-win7-setup.exe" `
             "target/win7/ShibaNC_${env:VER}_x64-win7-portable.zip" `
             --clobber
+
+  publish-release:
+    name: Publish Release
+    needs: [build-tauri, build-win7]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Publish GitHub Release draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RELEASE_ID: ${{ needs.prepare-release.outputs.release_id }}
+        run: |
+          gh api -X PATCH "repos/${REPO}/releases/${RELEASE_ID}" -F draft=false >/dev/null
+          echo "Published release id=${RELEASE_ID}"
