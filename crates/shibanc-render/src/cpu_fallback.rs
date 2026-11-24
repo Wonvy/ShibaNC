@@ -80,6 +80,8 @@ pub fn render_cpu_fallback(program: &ParsedProgram, opts: &RenderOptions, file_e
         MaterialPreset::Jade => Vec3::new(0.48, 0.76, 0.66),
         MaterialPreset::PineWood => Vec3::new(0.88, 0.76, 0.56),
         MaterialPreset::DepthHeatmap => Vec3::new(0.24, 0.74, 0.68),
+        MaterialPreset::MdfBoard => Vec3::new(0.77, 0.64, 0.45),
+        MaterialPreset::BirchPlywood => Vec3::new(0.89, 0.79, 0.61),
     };
 
     let center = Vec3::from_array(stock.center());

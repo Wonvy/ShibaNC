@@ -469,6 +469,33 @@ vec3 pineWoodAlbedo(vec3 wp) {
   return mix(vec3(0.91, 0.81, 0.63), vec3(0.73, 0.53, 0.32), smoothstep(0.62, 0.94, wave)) * (0.98 + 0.02 * fiber);
 }
 
+vec3 mdfBoardAlbedo(vec3 wp, bool isUncutTop) {
+  float speckA = sin(wp.x * 19.3 + wp.y * 23.7 + wp.z * 17.1);
+  float speckB = cos(wp.x * 41.2 - wp.y * 37.9 + wp.z * 29.4);
+  float fiberNoise = 0.5 + 0.25 * speckA + 0.25 * speckB;
+  vec3 coreBase = mix(vec3(0.73, 0.59, 0.41), vec3(0.79, 0.66, 0.47), fiberNoise);
+  vec3 topSkin  = mix(vec3(0.80, 0.68, 0.50), vec3(0.83, 0.71, 0.53), fiberNoise * 0.5);
+  return isUncutTop ? topSkin : coreBase;
+}
+
+vec3 birchPlywoodAlbedo(vec3 wp, float topZ) {
+  float depth = max(topZ - wp.z, 0.0);
+  float plyPitch = 1.45;
+  float plyCoord = depth / plyPitch;
+  int plyIdx = int(floor(plyCoord));
+  float plyFrac = fract(plyCoord);
+  bool evenPly = (plyIdx & 1) == 0;
+  float grainAlong = evenPly
+    ? sin(wp.x * 0.22 + sin(wp.y * 0.08) * 1.6)
+    : sin(wp.y * 0.22 + sin(wp.x * 0.08) * 1.6);
+  vec3 birchFace = mix(vec3(0.93, 0.85, 0.69), vec3(0.87, 0.76, 0.57), 0.5 + 0.5 * grainAlong);
+  vec3 birchCross = mix(vec3(0.79, 0.65, 0.46), vec3(0.72, 0.57, 0.39), 0.5 + 0.5 * grainAlong);
+  vec3 veneerCol = evenPly ? birchFace : birchCross;
+  float glueDist = min(plyFrac, 1.0 - plyFrac);
+  float isGlue = smoothstep(0.09, 0.015, glueDist) * (depth < 0.08 ? 0.0 : 1.0);
+  return mix(veneerCol, vec3(0.45, 0.32, 0.19), isGlue * 0.82);
+}
+
 vec3 depthHeatmapAlbedo(float tRaw) {
   float t = clamp(tRaw, 0.0, 1.0);
   vec3 c0 = vec3(0.18, 0.34, 0.82);
@@ -564,6 +591,15 @@ void main() {
       albedo = mix(baseHeat, baseHeat * 0.55, isoLine);
       metallic = 0.08;
       roughness = 0.42;
+    } else if (matId == 6) {
+      bool isUncutTop = vPartZone == 0 && vRawZ >= uStockMax.z - 0.002;
+      albedo = mdfBoardAlbedo(vWorldPos, isUncutTop);
+      metallic = 0.02;
+      roughness = isUncutTop ? 0.52 : 0.68;
+    } else if (matId == 7) {
+      albedo = birchPlywoodAlbedo(vWorldPos, uStockMax.z);
+      metallic = 0.03;
+      roughness = 0.50;
     } else {
       albedo = vec3(0.48, 0.76, 0.66);
       metallic = 0.05;

@@ -11,6 +11,8 @@ pub enum MaterialPreset {
     Jade = 3,
     PineWood = 4,
     DepthHeatmap = 5,
+    MdfBoard = 6,
+    BirchPlywood = 7,
 }
 
 impl MaterialPreset {
@@ -26,16 +28,14 @@ impl MaterialPreset {
             3 => Self::Jade,
             4 => Self::PineWood,
             5 => Self::DepthHeatmap,
-            _ => Self::Aluminum6061,
+            6 => Self::MdfBoard,
+            7 => Self::BirchPlywood,
+            _ => Self::MdfBoard,
         }
     }
 
-    pub fn auto_for_tool(kind: ToolKind, file_ext: &str) -> Self {
-        if file_ext.eq_ignore_ascii_case("tap") && matches!(kind, ToolKind::TaperedBallNose | ToolKind::VBit) {
-            Self::Rosewood
-        } else {
-            Self::Aluminum6061
-        }
+    pub fn auto_for_tool(_kind: ToolKind, _file_ext: &str) -> Self {
+        Self::MdfBoard
     }
 }
 

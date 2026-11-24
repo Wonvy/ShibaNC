@@ -475,7 +475,7 @@ export function parseGcodeInBrowser(text: string, fileName: string, fileExt: str
       },
       stock,
       tool,
-      default_material_id: isTap && tool.kind === "tapered_ball_nose" ? 1 : 0,
+      default_material_id: 6,
       preview_lines: previewLines,
     },
   };

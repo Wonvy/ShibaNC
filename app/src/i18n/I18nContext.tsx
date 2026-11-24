@@ -6,6 +6,8 @@ import React, {
   useMemo,
   useState,
 } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import {
   BUILTIN_LOCALES,
   buildExportedLocaleJson,
@@ -14,8 +16,9 @@ import {
   parseImportedLocaleJson,
   TranslationKey,
 } from "./locales";
+import { isTauriRuntime } from "../webFallback";
 
-const STORAGE_ACTIVE_LOCALE = "shibanc-locale";
+const STORAGE_USER_LOCALE = "shibanc-user-locale";
 const STORAGE_CUSTOM_LOCALES = "shibanc-custom-locales";
 
 function loadSavedCustomLocales(): LocalePack[] {
@@ -73,12 +76,19 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 
 function detectOsDefaultLocale(): string {
   try {
-    const langs =
-      typeof navigator !== "undefined"
-        ? navigator.languages && navigator.languages.length > 0
-          ? navigator.languages
-          : [navigator.language]
-        : [];
+    const langs: string[] = [];
+    if (typeof navigator !== "undefined") {
+      if (navigator.languages && navigator.languages.length > 0) {
+        langs.push(...navigator.languages);
+      }
+      if (navigator.language) {
+        langs.push(navigator.language);
+      }
+    }
+    if (typeof Intl !== "undefined" && Intl.DateTimeFormat) {
+      const intlLoc = Intl.DateTimeFormat().resolvedOptions().locale;
+      if (intlLoc) langs.push(intlLoc);
+    }
     for (const raw of langs) {
       if (!raw) continue;
       const lower = raw.toLowerCase();
@@ -102,11 +112,25 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({
     loadSavedCustomLocales()
   );
 
-  // Auto-detect OS/system language on first launch; fall back to English ("en")
+  // Follow OS language on startup unless user explicitly switched language in the menu
   const [locale, setLocaleState] = useState<string>(() => {
-    const saved = localStorage.getItem(STORAGE_ACTIVE_LOCALE);
+    const saved = localStorage.getItem(STORAGE_USER_LOCALE);
     return saved && saved.trim() ? saved : detectOsDefaultLocale();
   });
+
+  // Also query native Win32/OS UI language in Tauri desktop runtime on startup
+  useEffect(() => {
+    const saved = localStorage.getItem(STORAGE_USER_LOCALE);
+    if (saved && saved.trim()) return;
+    if (!isTauriRuntime()) return;
+    invoke<string>("get_system_locale")
+      .then((osLoc) => {
+        if (osLoc === "zh-CN" || osLoc === "en") {
+          setLocaleState(osLoc);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const locales = useMemo(
     () => [...BUILTIN_LOCALES, ...customLocales],
@@ -132,11 +156,17 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     document.documentElement.lang = activePack.code;
-    document.title = t("app.windowTitle");
-    localStorage.setItem(STORAGE_ACTIVE_LOCALE, activePack.code);
+    const winTitle = t("app.windowTitle");
+    document.title = winTitle;
+    if (isTauriRuntime()) {
+      getCurrentWindow()
+        .setTitle(winTitle)
+        .catch(() => {});
+    }
   }, [activePack, t]);
 
   const setLocale = useCallback((code: string) => {
+    localStorage.setItem(STORAGE_USER_LOCALE, code);
     setLocaleState(code);
   }, []);
 
@@ -158,6 +188,7 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.setItem(STORAGE_CUSTOM_LOCALES, JSON.stringify(next));
         return next;
       });
+      localStorage.setItem(STORAGE_USER_LOCALE, result.pack.code);
       setLocaleState(result.pack.code);
       return result;
     },
@@ -173,7 +204,14 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({
         localStorage.setItem(STORAGE_CUSTOM_LOCALES, JSON.stringify(next));
         return next;
       });
-      setLocaleState((cur) => (cur === code ? "en" : cur));
+      setLocaleState((cur) => {
+        if (cur === code) {
+          const fallback = detectOsDefaultLocale();
+          localStorage.removeItem(STORAGE_USER_LOCALE);
+          return fallback;
+        }
+        return cur;
+      });
       return removed;
     },
     []

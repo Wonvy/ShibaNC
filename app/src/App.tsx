@@ -371,7 +371,7 @@ export const App: React.FC = () => {
     inferred: true,
   });
 
-  const [materialId, setMaterialId] = useState<number>(1);
+  const [materialId, setMaterialId] = useState<number>(6);
   const [gridMaxDim, setGridMaxDim] = useState<number>(1024);
   const [activeSegs, setActiveSegs] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);

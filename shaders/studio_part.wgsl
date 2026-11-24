@@ -512,6 +512,42 @@ fn pine_wood_albedo(wp: vec3<f32>) -> vec3<f32> {
     return mix(early_pine, late_pine, late_band) * (0.98 + 0.02 * fiber);
 }
 
+fn mdf_board_albedo(wp: vec3<f32>, is_uncut_top: bool) -> vec3<f32> {
+    // Medium-Density Fiberboard (密度板 MDF): smooth pressed skin on top, fine matte wood-fiber core inside cuts
+    let speck_a = sin(wp.x * 19.3 + wp.y * 23.7 + wp.z * 17.1);
+    let speck_b = cos(wp.x * 41.2 - wp.y * 37.9 + wp.z * 29.4);
+    let fiber_noise = 0.5 + 0.25 * speck_a + 0.25 * speck_b;
+    // Slight core density gradient across board thickness
+    let core_base = mix(vec3<f32>(0.73, 0.59, 0.41), vec3<f32>(0.79, 0.66, 0.47), fiber_noise);
+    let top_skin  = mix(vec3<f32>(0.80, 0.68, 0.50), vec3<f32>(0.83, 0.71, 0.53), fiber_noise * 0.5);
+    return select(core_base, top_skin, is_uncut_top);
+}
+
+fn birch_plywood_albedo(wp: vec3<f32>, top_z: f32) -> vec3<f32> {
+    // Multi-layer Baltic Birch Plywood (桦木多层板): 1.45 mm cross-banded light/warm birch veneers + dark phenolic glue lines
+    let depth = max(top_z - wp.z, 0.0);
+    let ply_pitch = 1.45;
+    let ply_coord = depth / ply_pitch;
+    let ply_idx = i32(floor(ply_coord));
+    let ply_frac = fract(ply_coord);
+
+    // Alternating 90-degree cross-grained birch plies
+    let grain_along = select(
+        sin(wp.y * 0.22 + sin(wp.x * 0.08) * 1.6),
+        sin(wp.x * 0.22 + sin(wp.y * 0.08) * 1.6),
+        (ply_idx & 1) == 0
+    );
+    let birch_face = mix(vec3<f32>(0.93, 0.85, 0.69), vec3<f32>(0.87, 0.76, 0.57), 0.5 + 0.5 * grain_along);
+    let birch_cross = mix(vec3<f32>(0.79, 0.65, 0.46), vec3<f32>(0.72, 0.57, 0.39), 0.5 + 0.5 * grain_along);
+    let veneer_col = select(birch_cross, birch_face, (ply_idx & 1) == 0);
+
+    // Crisp dark resin glue line at every veneer boundary (except the very top uncut face)
+    let glue_dist = min(ply_frac, 1.0 - ply_frac);
+    let is_glue = smoothstep(0.09, 0.015, glue_dist) * select(1.0, 0.0, depth < 0.08);
+    let glue_col = vec3<f32>(0.45, 0.32, 0.19);
+    return mix(veneer_col, glue_col, is_glue * 0.82);
+}
+
 fn depth_heatmap_albedo(t_raw: f32) -> vec3<f32> {
     // Perceptual CAD Depth Elevation Ramp (0.0 Top = Slate/Blue -> Cyan -> Green -> Yellow -> Red = Deepest)
     let t = clamp(t_raw, 0.0, 1.0);
@@ -653,6 +689,19 @@ fn fs_main(in: VsOut) -> @location(0) vec4<f32> {
                 albedo = mix(base_heat, base_heat * 0.55, iso_line);
                 metallic = 0.08;
                 roughness = 0.42;
+            }
+            case 6u: {
+                // Medium-Density Fiberboard (密度板 MDF)
+                let is_uncut_top = in.part_zone == 0u && in.raw_z >= u.stock_max.z - 0.002;
+                albedo = mdf_board_albedo(in.world_pos, is_uncut_top);
+                metallic = 0.02;
+                roughness = select(0.68, 0.52, is_uncut_top);
+            }
+            case 7u: {
+                // Birch Multi-Layer Plywood (桦木多层板)
+                albedo = birch_plywood_albedo(in.world_pos, u.stock_max.z);
+                metallic = 0.03;
+                roughness = 0.50;
             }
             default: {
                 // Celadon Jade / Sculpting Polymer

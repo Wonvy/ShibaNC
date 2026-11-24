@@ -14,7 +14,7 @@ use shibanc_render::{
     STUDIO_PART_WGSL, TOOLPATH_WGSL,
 };
 use tauri::ipc::Response;
-use tauri::State;
+use tauri::{Manager, State};
 
 struct AppState {
     session: Mutex<Option<LoadedSession>>,
@@ -373,6 +373,37 @@ fn read_text_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
 }
 
+fn detect_os_is_chinese() -> bool {
+    #[cfg(target_os = "windows")]
+    {
+        extern "system" {
+            fn GetUserDefaultUILanguage() -> u16;
+        }
+        // Primary LANGID 0x04 = LANG_CHINESE (zh-CN, zh-TW, zh-HK, zh-SG)
+        let lang_id = unsafe { GetUserDefaultUILanguage() };
+        if (lang_id & 0x3ff) == 0x04 {
+            return true;
+        }
+    }
+    for var in ["LC_ALL", "LC_MESSAGES", "LANG"] {
+        if let Ok(val) = std::env::var(var) {
+            if val.to_ascii_lowercase().starts_with("zh") {
+                return true;
+            }
+        }
+    }
+    false
+}
+
+#[tauri::command]
+fn get_system_locale() -> &'static str {
+    if detect_os_is_chinese() {
+        "zh-CN"
+    } else {
+        "en"
+    }
+}
+
 #[tauri::command]
 fn get_app_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -413,6 +444,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .setup(|app| {
+            if detect_os_is_chinese() {
+                if let Some(win) = app.get_webview_window("main") {
+                    let _ = win.set_title("ShibaNC — 高清三轴 G 代码刀路与实体切削仿真");
+                }
+            }
             #[cfg(not(any(target_os = "android", target_os = "ios")))]
             {
                 let _ = app
@@ -442,6 +478,7 @@ pub fn run() {
             save_text_file,
             read_text_file,
             get_app_version,
+            get_system_locale,
             open_external_url,
         ])
         .run(tauri::generate_context!())

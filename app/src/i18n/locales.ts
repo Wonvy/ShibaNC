@@ -118,6 +118,10 @@ export const EN_TRANSLATIONS = {
 
   // Materials
   "material.dropdownLabel": "Workpiece Material",
+  "material.6.name": "MDF Fiberboard",
+  "material.6.desc": "Dense matte wood fiber · CNC routing, nesting & reliefs",
+  "material.7.name": "Birch Multi-Layer Plywood",
+  "material.7.desc": "Cross-banded birch veneer · Layered contour & furniture routing",
   "material.4.name": "Natural Pine Wood",
   "material.4.desc": "Warm timber grain · Woodworking & relief plaques",
   "material.1.name": "Burmese Rosewood",
@@ -397,6 +401,10 @@ export const ZH_CN_TRANSLATIONS: TranslationDict = {
 
   // Materials
   "material.dropdownLabel": "选择工件显示材质",
+  "material.6.name": "密度板 (MDF 纤维护板)",
+  "material.6.desc": "细腻均匀压制木纤维 · 开料雕刻 / 浮雕打样默认",
+  "material.7.name": "桦木多层板 (海洋板)",
+  "material.7.desc": "清晰多层桦木夹芯胶线 · 板式家具 / 阶梯轮廓铣削",
   "material.4.name": "松木 (天然原木)",
   "material.4.desc": "浅色原木纹理 · 木工开料 / 牌匾浮雕",
   "material.1.name": "缅甸花梨木",

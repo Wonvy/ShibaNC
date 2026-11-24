@@ -10,6 +10,8 @@ export interface MaterialOption {
 }
 
 export const MATERIAL_OPTIONS: MaterialOption[] = [
+  { id: 6, nameKey: "material.6.name", descKey: "material.6.desc" },
+  { id: 7, nameKey: "material.7.name", descKey: "material.7.desc" },
   { id: 4, nameKey: "material.4.name", descKey: "material.4.desc" },
   { id: 1, nameKey: "material.1.name", descKey: "material.1.desc" },
   { id: 0, nameKey: "material.0.name", descKey: "material.0.desc" },
@@ -86,9 +88,50 @@ export const MaterialSphereIcon: React.FC<{
           <stop offset="76%" stopColor="#f5d12e" />
           <stop offset="100%" stopColor="#eb3d2e" />
         </linearGradient>
+
+        {/* MDF Board (密度板) */}
+        <radialGradient id={`mdf-${uid}`} cx="36%" cy="32%" r="72%">
+          <stop offset="0%" stopColor="#e5cfaf" />
+          <stop offset="55%" stopColor="#c7a373" />
+          <stop offset="100%" stopColor="#946f43" />
+        </radialGradient>
+
+        {/* Birch Plywood (桦木多层板) */}
+        <radialGradient id={`birch-${uid}`} cx="36%" cy="30%" r="72%">
+          <stop offset="0%" stopColor="#f9edd6" />
+          <stop offset="54%" stopColor="#e4c89b" />
+          <stop offset="100%" stopColor="#ab8653" />
+        </radialGradient>
       </defs>
 
       <g clipPath={`url(#clip-${uid})`}>
+        {materialId === 6 && (
+          <>
+            <circle cx="16" cy="16" r="13" fill={`url(#mdf-${uid})`} />
+            {/* Uniform compressed fiberboard micro-speckle texture */}
+            <circle cx="10" cy="14" r="0.9" fill="#7c5a32" fillOpacity="0.35" />
+            <circle cx="18" cy="11" r="0.8" fill="#7c5a32" fillOpacity="0.32" />
+            <circle cx="22" cy="17" r="1.0" fill="#7c5a32" fillOpacity="0.35" />
+            <circle cx="13" cy="21" r="0.85" fill="#7c5a32" fillOpacity="0.35" />
+            <circle cx="19" cy="23" r="0.9" fill="#7c5a32" fillOpacity="0.32" />
+            <ellipse cx="12" cy="10" rx="4.2" ry="2.0" transform="rotate(-24 12 10)" fill="#ffffff" fillOpacity="0.28" />
+          </>
+        )}
+
+        {materialId === 7 && (
+          <>
+            <circle cx="16" cy="16" r="13" fill={`url(#birch-${uid})`} />
+            {/* Distinct horizontal multi-layer birch veneer glue lines */}
+            <path
+              d="M2 10.5 Q16 12.2 30 10.5 M2 14.5 Q16 16.2 30 14.5 M2 18.5 Q16 20.2 30 18.5 M3 22.5 Q16 24.2 29 22.5"
+              stroke="#6e4b26"
+              strokeOpacity="0.62"
+              strokeWidth="1.25"
+              fill="none"
+            />
+            <ellipse cx="12" cy="9.8" rx="4.4" ry="2.1" transform="rotate(-24 12 9.8)" fill="#ffffff" fillOpacity="0.36" />
+          </>
+        )}
         {materialId === 4 && (
           <>
             <circle cx="16" cy="16" r="13" fill={`url(#pine-${uid})`} />
