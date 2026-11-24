@@ -71,6 +71,30 @@ interface I18nContextValue {
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
+function detectOsDefaultLocale(): string {
+  try {
+    const langs =
+      typeof navigator !== "undefined"
+        ? navigator.languages && navigator.languages.length > 0
+          ? navigator.languages
+          : [navigator.language]
+        : [];
+    for (const raw of langs) {
+      if (!raw) continue;
+      const lower = raw.toLowerCase();
+      if (lower.startsWith("zh")) {
+        return "zh-CN";
+      }
+      if (lower.startsWith("en")) {
+        return "en";
+      }
+    }
+  } catch {
+    // fallback to English
+  }
+  return "en";
+}
+
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -78,10 +102,10 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({
     loadSavedCustomLocales()
   );
 
-  // Default to English ("en") when no locale has been explicitly selected
+  // Auto-detect OS/system language on first launch; fall back to English ("en")
   const [locale, setLocaleState] = useState<string>(() => {
     const saved = localStorage.getItem(STORAGE_ACTIVE_LOCALE);
-    return saved && saved.trim() ? saved : "en";
+    return saved && saved.trim() ? saved : detectOsDefaultLocale();
   });
 
   const locales = useMemo(
