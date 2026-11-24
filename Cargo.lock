@@ -3727,7 +3727,7 @@ dependencies = [
 
 [[package]]
 name = "shibanc-app"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bytemuck",
  "image",
@@ -3745,7 +3745,7 @@ dependencies = [
 
 [[package]]
 name = "shibanc-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "image",
  "serde",
@@ -3759,7 +3759,7 @@ dependencies = [
 
 [[package]]
 name = "shibanc-ffi"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "shibanc-gcode",
  "shibanc-render",
@@ -3767,7 +3767,7 @@ dependencies = [
 
 [[package]]
 name = "shibanc-gcode"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bytemuck",
  "glam",
@@ -3778,7 +3778,7 @@ dependencies = [
 
 [[package]]
 name = "shibanc-render"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bytemuck",
  "glam",
@@ -3794,7 +3794,7 @@ dependencies = [
 
 [[package]]
 name = "shibanc-thumb-win"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "shibanc-gcode",
  "shibanc-render",
