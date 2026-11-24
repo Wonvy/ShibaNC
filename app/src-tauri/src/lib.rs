@@ -71,7 +71,10 @@ pub struct FolderFileEntryDto {
 
 fn is_supported_gcode_ext(path: &Path) -> Option<String> {
     let ext = path.extension()?.to_string_lossy().to_ascii_lowercase();
-    if matches!(ext.as_str(), "tap" | "nc" | "gcode" | "cnc") {
+    if matches!(
+        ext.as_str(),
+        "nc" | "tap" | "gcode" | "cnc" | "ngc" | "anc" | "iso" | "plt" | "mpf"
+    ) {
         Some(ext)
     } else {
         None
@@ -139,11 +142,7 @@ fn get_startup_file_arg() -> Option<String> {
         if p.is_dir() {
             return true;
         }
-        let lower = arg.to_ascii_lowercase();
-        lower.ends_with(".tap")
-            || lower.ends_with(".nc")
-            || lower.ends_with(".gcode")
-            || lower.ends_with(".cnc")
+        is_supported_gcode_ext(p).is_some()
     })
 }
 

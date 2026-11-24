@@ -7,7 +7,9 @@ pub const SHIBANC_THUMB_CLSID_STR: &str = "{8F4B9E3A-6D21-4C8E-9A54-71C2E5F0B108
 /// Windows Shell standard `IThumbnailProvider` ShellEx handler GUID.
 pub const SHELL_THUMBNAIL_HANDLER_GUID: &str = "{e357fccd-a995-4576-b01f-234630154e96}";
 pub const SHIBANC_PROG_ID: &str = "ShibaNC.GCodeFile";
-pub const SUPPORTED_EXTENSIONS: &[&str] = &[".tap", ".nc", ".gcode", ".cnc"];
+pub const SUPPORTED_EXTENSIONS: &[&str] = &[
+    ".nc", ".tap", ".gcode", ".cnc", ".ngc", ".anc", ".iso", ".plt", ".mpf",
+];
 
 #[cfg(windows)]
 mod win_impl {

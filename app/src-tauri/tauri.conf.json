@@ -38,13 +38,16 @@
       "nsis": {
         "installMode": "currentUser",
         "installerIcon": "icons/icon.ico",
+        "sidebarImage": "nsis/sidebar.bmp",
+        "headerImage": "nsis/header.bmp",
+        "template": "nsis/installer.nsi",
         "languages": ["English", "SimpChinese"],
         "displayLanguageSelector": false
       }
     },
     "fileAssociations": [
       {
-        "ext": ["tap", "nc", "gcode", "cnc"],
+        "ext": ["nc", "tap", "gcode", "cnc", "ngc", "anc", "iso", "plt", "mpf"],
         "name": "CNC Toolpath G-Code",
         "description": "CNC G-Code Toolpath File",
         "role": "Viewer",

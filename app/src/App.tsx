@@ -343,14 +343,41 @@ export const App: React.FC = () => {
   const [assocRegistered, setAssocRegistered] = useState<boolean>(false);
 
   const [theme, setTheme] = useState<"light" | "dark">(() => {
-    const saved = localStorage.getItem("shibanc-theme");
-    return saved === "light" ? "light" : "dark";
+    const saved = localStorage.getItem("shibanc-user-theme");
+    if (saved === "light" || saved === "dark") {
+      return saved;
+    }
+    if (
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-color-scheme: light)").matches
+    ) {
+      return "light";
+    }
+    return "dark";
   });
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("shibanc-theme", theme);
   }, [theme]);
+
+  // Dynamically follow OS Light/Dark theme changes unless user explicitly toggled theme
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+    const mql = window.matchMedia("(prefers-color-scheme: light)");
+    const onChange = (e: MediaQueryListEvent) => {
+      const saved = localStorage.getItem("shibanc-user-theme");
+      if (saved !== "light" && saved !== "dark") {
+        setTheme(e.matches ? "light" : "dark");
+      }
+    };
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", onChange);
+      return () => mql.removeEventListener("change", onChange);
+    }
+  }, []);
 
   const [gpuError, setGpuError] = useState<string | null>(null);
   const [program, setProgram] = useState<ProgramPayloadDto | null>(null);
@@ -576,7 +603,17 @@ export const App: React.FC = () => {
 
   const handleBrowserFolderFiles = useCallback(
     async (fileList: FileList) => {
-      const validExts = new Set(["tap", "nc", "gcode", "cnc"]);
+      const validExts = new Set([
+        "nc",
+        "tap",
+        "gcode",
+        "cnc",
+        "ngc",
+        "anc",
+        "iso",
+        "plt",
+        "mpf",
+      ]);
       const items: FolderFileItem[] = [];
       for (let i = 0; i < fileList.length; i++) {
         const f = fileList[i];
@@ -1219,7 +1256,7 @@ export const App: React.FC = () => {
       filters: [
         {
           name: t("dialog.filterGcode"),
-          extensions: ["tap", "nc", "gcode", "cnc"],
+          extensions: ["nc", "tap", "gcode", "cnc", "ngc", "anc", "iso", "plt", "mpf"],
         },
       ],
     });
@@ -1875,7 +1912,7 @@ export const App: React.FC = () => {
         ref={webFileInputRef}
         type="file"
         multiple
-        accept=".tap,.nc,.gcode,.cnc"
+        accept=".nc,.tap,.gcode,.cnc,.ngc,.anc,.iso,.plt,.mpf"
         style={{ display: "none" }}
         onChange={(e) => {
           const files = e.target.files;
@@ -2193,7 +2230,13 @@ export const App: React.FC = () => {
 
           <button
             className="sh-btn icon-only"
-            onClick={() => setTheme((tMode) => (tMode === "dark" ? "light" : "dark"))}
+            onClick={() =>
+              setTheme((tMode) => {
+                const next = tMode === "dark" ? "light" : "dark";
+                localStorage.setItem("shibanc-user-theme", next);
+                return next;
+              })
+            }
             title={
               theme === "dark"
                 ? t("topbar.theme.toLight")

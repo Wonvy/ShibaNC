@@ -246,7 +246,7 @@ export const EN_TRANSLATIONS = {
   "gcode.closeTip": "Close G-Code panel",
 
   // Dialogs & Toasts
-  "dialog.filterGcode": "CNC Toolpath (.tap, .nc, .gcode, .cnc)",
+  "dialog.filterGcode": "CNC Toolpath (.nc, .tap, .gcode, .cnc, .ngc, .anc, .iso, .plt, .mpf)",
   "dialog.openFolderTitle": "Select Folder with .tap / .nc Toolpaths",
   "dialog.filterPng": "PNG Image (.png)",
   "dialog.filterStl": "Binary STL 3D Mesh (.stl)",
@@ -529,7 +529,7 @@ export const ZH_CN_TRANSLATIONS: TranslationDict = {
   "gcode.closeTip": "收起 G 代码面板",
 
   // Dialogs & Toasts
-  "dialog.filterGcode": "CNC 刀路文件 (.tap, .nc, .gcode, .cnc)",
+  "dialog.filterGcode": "CNC 刀路文件 (.nc, .tap, .gcode, .cnc, .ngc, .anc, .iso, .plt, .mpf)",
   "dialog.openFolderTitle": "选择包含 .tap / .nc 刀路的文件夹",
   "dialog.filterPng": "PNG 高清图像 (.png)",
   "dialog.filterStl": "STL 三维网格模型 (.stl)",
