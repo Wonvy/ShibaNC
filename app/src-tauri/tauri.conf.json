@@ -50,5 +50,13 @@
         "mimeType": "application/x-gcode"
       }
     ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDhGNEEyQzUxOUVGMzA3RDEKUldUUkIvT2VVU3hLajA5M1p3Rmp3MkdKclF4b1Z6eUpxY1hsdk93R1l1b2J6b1dKclF4b1Z6eQo=",
+      "endpoints": [
+        "https://github.com/Wonvy/ShibaNC/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

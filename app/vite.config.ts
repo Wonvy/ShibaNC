@@ -11,7 +11,7 @@ export default defineConfig(async () => ({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version || "0.1.0"),
-    __GITHUB_REPO__: JSON.stringify(process.env.VITE_GITHUB_REPO || ""),
+    __GITHUB_REPO__: JSON.stringify(process.env.VITE_GITHUB_REPO || "Wonvy/ShibaNC"),
   },
   clearScreen: false,
   server: {
